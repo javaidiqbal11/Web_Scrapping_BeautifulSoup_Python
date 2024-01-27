@@ -2,6 +2,7 @@ import csv
 import requests
 from bs4 import BeautifulSoup
 
+# use this function
 def scrape_scholar_profile(name):
     # Construct the URL for the Google Scholar search
     url = f"https://scholar.google.com/scholar?q={name}"

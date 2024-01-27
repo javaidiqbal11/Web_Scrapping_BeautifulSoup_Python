@@ -1,4 +1,4 @@
-## Web_Scrapping_BeautifulSoup_Python
+### Web Scrapping Using BeautifulSoup Python
 
 This repo is for web scraping using BeautifulSoup with Python. 
 
