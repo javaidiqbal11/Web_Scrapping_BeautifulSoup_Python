@@ -1,39 +1,53 @@
-import csv
-import requests
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+import pandas as pd
+import time
 
-# use this function
-def scrape_scholar_profile(name):
-    # Construct the URL for the Google Scholar search
-    url = f"https://scholar.google.com/scholar?q={name}"
+def scrape_scholar_profiles(teacher_names, driver_path):
+    # Initialize the browser driver
+    service = Service(driver_path)
+    driver = webdriver.Chrome(service=service)
 
-    try:
-        # Send a request to the URL
-        response = requests.get(url)
-        response.raise_for_status()
+    profiles = []
 
-        # Parse the content of the page
-        soup = BeautifulSoup(response.text, 'lxml')
+    for name in teacher_names:
+        # Navigate to Google Scholar
+        driver.get('https://scholar.google.com/')
 
-        # Find and return the necessary data
-        # This is a placeholder as the actual data extraction depends on the HTML structure
-        profile_data = soup.find(...)  # Adjust this to locate the correct data
-        return profile_data
-    except requests.RequestException as e:
-        return str(e)
+        # Find the search box and enter the teacher's name
+        search_box = driver.find_element(By.NAME, 'q')
+        search_box.clear()
+        search_box.send_keys(name)
+        search_box.send_keys(Keys.RETURN)
 
-def main():
-    # List of teacher names
-    teachers = ["Arfan Jaffar", "Muhammad Javaid Iqbal", "Sohail Masood"]
+        time.sleep(2) # Wait for page to load
 
-    # File to store the scraped data
-    with open('scholar_profiles.csv', mode='w', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        writer.writerow(["Name", "Profile Data"])  # Header row
+        try:
+            # Click on the first profile link
+            profile_link = driver.find_element(By.XPATH, '//*[@id="gs_res_ccl_mid"]/div/div/div/h3/a')
+            profile_link.click()
 
-        for name in teachers:
-            data = scrape_scholar_profile(name)
-            writer.writerow([name, data])
+            time.sleep(2) # Wait for profile page to load
 
-if __name__ == "__main__":
-    main()
+            # Scrape the titles of the publications
+            titles = [title.text for title in driver.find_elements(By.CLASS_NAME, 'gsc_a_at')]
+
+            profiles.append({'Name': name, 'Titles': titles})
+        except Exception as e:
+            print(f"Error scraping data for {name}: {e}")
+
+    driver.quit()
+    return profiles
+
+# Example usage
+teacher_names = ['Muhammad Javaid Iqbal', 'Arfan Jaffar']  # Replace with actual names
+driver_path = 'C:/Users/red/Downloads/chromedriver_win32/chromedriver'  # Update with your driver path
+
+# Scrape the profiles
+data = scrape_scholar_profiles(teacher_names, driver_path)
+
+# Convert to DataFrame and save to CSV
+df = pd.DataFrame(data)
+df.to_csv('scholar_profiles.csv', index=False)
